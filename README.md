@@ -1,6 +1,3 @@
-[![Docker](https://img.shields.io/badge/Docker-ghcr.io%2FRoom--Elephant%2Fpluck-2496ED?style=flat-square&logo=docker)](https://ghcr.io/Room-Elephant/pluck)
-[![Docker Hub](https://img.shields.io/badge/Docker%20Hub-roomelephant%2Fpluck-2496ED?style=flat-square&logo=docker)](https://hub.docker.com/r/roomelephant/pluck)
-
 ```
 ██████╗ ██╗     ██╗   ██╗ ██████╗██╗  ██╗
 ██╔══██╗██║     ██║   ██║██╔════╝██║ ██╔╝
@@ -17,6 +14,7 @@
 [![Go](https://img.shields.io/badge/Go-1.26-00ADD8?style=flat-square&logo=go)](https://go.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-ghcr.io%2FRoom--Elephant%2Fpluck-2496ED?style=flat-square&logo=docker)](https://ghcr.io/Room-Elephant/pluck)
+[![Docker Hub](https://img.shields.io/badge/Docker%20Hub-roomelephant%2Fpluck-2496ED?style=flat-square&logo=docker)](https://hub.docker.com/r/roomelephant/pluck)
 
 ---
 
