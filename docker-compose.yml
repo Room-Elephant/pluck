@@ -1,0 +1,40 @@
+# Example: pluck alongside Transmission
+# Adjust volumes and rules to match your setup
+
+services:
+  transmission:
+    image: lscr.io/linuxserver/transmission:latest
+    container_name: transmission
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - ./config/transmission:/config
+      - /data/downloads:/data/downloads
+    ports:
+      - 9091:9091
+      - 51413:51413
+      - 51413:51413/udp
+
+  pluck:
+    build: .
+    # image: ghcr.io/jpedroborges/pluck:latest  # once published
+    container_name: pluck
+    restart: unless-stopped
+    depends_on:
+      - transmission
+    environment:
+      - PLUCK_CLIENT=transmission
+      - PLUCK_CLIENT_URL=http://transmission:9091/transmission/rpc
+      # - PLUCK_CLIENT_USER=admin
+      # - PLUCK_CLIENT_PASS=secret
+      - PLUCK_MODE=hardlink
+      - PLUCK_WATCH_DIR=/data/downloads
+      - PLUCK_RESCAN_INTERVAL=3600
+      - PLUCK_LOG_LEVEL=info
+      # - PLUCK_DRY_RUN=true
+    volumes:
+      - ./rules:/etc/pluck/rules       # your rules file
+      - /data/downloads:/data/downloads # must match Transmission's download dir
+      - /data/media:/data/media         # destination directories

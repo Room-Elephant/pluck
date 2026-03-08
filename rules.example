@@ -1,0 +1,10 @@
+# Pluck rules — map torrent labels to destination directories
+# Format: label:destination
+# Labels are matched case-insensitively
+#
+# Example:
+audiobook:/data/media/audiobooks
+ebook:/data/media/ebooks
+music:/data/media/music
+movie:/data/media/movies
+tv:/data/media/tv
