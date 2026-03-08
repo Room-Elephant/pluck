@@ -65,8 +65,11 @@ func (s *State) MarkProcessed(path, label string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
-
 	_, err = file.WriteString(key + "\n")
+
+	if cerr := file.Close(); cerr != nil && err == nil {
+		err = cerr
+	}
+
 	return err
 }
