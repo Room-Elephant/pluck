@@ -29,8 +29,11 @@ jobs:
             exit 1
           fi
 
+      - name: Vet
+        run: go vet ./...
+
       - name: Build Project
         run: go build -v ./...
 
       - name: Build Docker Image
-        run: docker build -t pluck:ci .
+        run: docker build --platform linux/amd64 -t pluck:ci .

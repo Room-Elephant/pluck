@@ -188,7 +188,6 @@ go build -o pluck ./cmd/pluck
 - [ ] Deluge support
 - [ ] Post-pluck webhook notifications (Audiobookshelf rescan, Discord, etc.)
 - [ ] Post-pluck custom scripts
-- [ ] GHCR / Docker Hub automated builds
 - [ ] Health check endpoint
 
 ---
