@@ -9,9 +9,10 @@ import (
 	"github.com/Room-Elephant/pluck/internal/log"
 	"github.com/Room-Elephant/pluck/internal/placer"
 	"github.com/Room-Elephant/pluck/internal/rules"
+	"github.com/Room-Elephant/pluck/internal/state"
 )
 
-func pluckTorrents(ctx context.Context, torrentClient client.Client, activeRuleset rules.Ruleset, filePlacer *placer.Placer, appConfig config.Config) {
+func pluckTorrents(ctx context.Context, torrentClient client.Client, activeRuleset rules.Ruleset, filePlacer *placer.Placer, appState *state.State, appConfig config.Config) {
 	log.Debugf("scanning for completed torrents…")
 
 	torrents, err := torrentClient.CompletedTorrents(ctx)
@@ -30,8 +31,19 @@ func pluckTorrents(ctx context.Context, torrentClient client.Client, activeRules
 		name := torrent.Path[lastSlash(torrent.Path)+1:]
 		dst := destDir + "/" + name
 
+		if appState.HasProcessed(torrent.Path, torrent.Label) {
+			log.Debugf("already processed, skipping: %s (%s)", name, torrent.Label)
+			continue
+		}
+
 		if exists(dst) {
 			log.Debugf("already exists, skipping: %s", name)
+			// Mark as processed so we don't check filesystem on future runs
+			if !appConfig.DryRun {
+				if err := appState.MarkProcessed(torrent.Path, torrent.Label); err != nil {
+					log.Errorf("failed to save state for existing file %s: %v", name, err)
+				}
+			}
 			continue
 		}
 
@@ -49,6 +61,9 @@ func pluckTorrents(ctx context.Context, torrentClient client.Client, activeRules
 			log.Errorf("failed to pluck %s -> %s: %v", name, destDir, err)
 		} else {
 			log.Infof("plucked (%s): %s -> %s", filePlacer.Mode(), name, destDir)
+			if err := appState.MarkProcessed(torrent.Path, torrent.Label); err != nil {
+				log.Errorf("failed to save state for %s: %v", name, err)
+			}
 		}
 	}
 }

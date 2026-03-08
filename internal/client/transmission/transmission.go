@@ -29,6 +29,9 @@ type Client struct {
 }
 
 func New(url, user, pass string) *Client {
+	if !strings.HasSuffix(url, "/transmission/rpc") {
+		url = strings.TrimRight(url, "/") + "/transmission/rpc"
+	}
 	return &Client{
 		url:  url,
 		user: user,

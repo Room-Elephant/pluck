@@ -55,7 +55,7 @@ services:
     restart: unless-stopped
     environment:
       - PLUCK_CLIENT=transmission
-      - PLUCK_CLIENT_URL=http://transmission:9091/transmission/rpc
+      - PLUCK_CLIENT_URL=http://transmission:9091
       - PLUCK_MODE=hardlink
       - PLUCK_WATCH_DIR=/data/downloads
     volumes:
@@ -104,12 +104,11 @@ All configuration is done via environment variables:
 | Variable | Default | Description |
 |---|---|---|
 | `PLUCK_CLIENT` | `transmission` | Torrent client type |
-| `PLUCK_CLIENT_URL` | `http://transmission:9091/transmission/rpc` | Client RPC endpoint |
-| `PLUCK_CLIENT_USER` | *(empty)* | RPC auth username |
-| `PLUCK_CLIENT_PASS` | *(empty)* | RPC auth password |
+| `PLUCK_CLIENT_URL` | `http://transmission:9091` | Client URL |
 | `PLUCK_MODE` | `hardlink` | `hardlink`, `symlink`, or `copy` |
 | `PLUCK_WATCH_DIR` | `/data/downloads` | Directory to watch for new files |
 | `PLUCK_RULES_FILE` | `/config/rules.conf` | Path to rules file |
+| `PLUCK_STATE_FILE` | `/config/state.txt` | Path to state history file |
 | `PLUCK_RESCAN_INTERVAL` | `3600` | Seconds between periodic rescans |
 | `PLUCK_DRY_RUN` | `false` | Log actions without executing them |
 | `PLUCK_LOG_LEVEL` | `info` | `debug`, `info`, or `error` |

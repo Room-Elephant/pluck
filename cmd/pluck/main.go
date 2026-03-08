@@ -13,6 +13,7 @@ import (
 	"github.com/Room-Elephant/pluck/internal/log"
 	"github.com/Room-Elephant/pluck/internal/placer"
 	"github.com/Room-Elephant/pluck/internal/rules"
+	"github.com/Room-Elephant/pluck/internal/state"
 	"github.com/Room-Elephant/pluck/internal/watcher"
 )
 
@@ -37,6 +38,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	appState, err := state.Load(appConfig.StateFile)
+	if err != nil {
+		log.Errorf("failed to load state: %v", err)
+		os.Exit(1)
+	}
+
 	torrentClient := newClient(appConfig)
 
 	filePlacer := placer.New(appConfig.Mode)
@@ -54,7 +61,7 @@ func main() {
 	scan := func() {
 		scanMu.Lock()
 		defer scanMu.Unlock()
-		pluckTorrents(ctx, torrentClient, ruleset, filePlacer, appConfig)
+		pluckTorrents(ctx, torrentClient, ruleset, filePlacer, appState, appConfig)
 	}
 
 	watchErr := make(chan error, 1)

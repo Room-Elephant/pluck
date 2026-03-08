@@ -22,6 +22,7 @@ type Config struct {
 	Mode           string
 	WatchDir       string
 	RulesFile      string
+	StateFile      string
 	RescanInterval time.Duration
 	RescanRaw      string
 	DryRun         bool
@@ -31,12 +32,13 @@ type Config struct {
 func Load() (Config, error) {
 	appConfig := Config{
 		Client:     getEnv("PLUCK_CLIENT", "transmission"),
-		ClientURL:  getEnv("PLUCK_CLIENT_URL", "http://transmission:9091/transmission/rpc"),
+		ClientURL:  getEnv("PLUCK_CLIENT_URL", "http://transmission:9091"),
 		ClientUser: getEnv("PLUCK_CLIENT_USER", ""),
 		ClientPass: getEnv("PLUCK_CLIENT_PASS", ""),
 		Mode:       getEnv("PLUCK_MODE", "hardlink"),
 		WatchDir:   getEnv("PLUCK_WATCH_DIR", "/data/downloads"),
 		RulesFile:  getEnv("PLUCK_RULES_FILE", "/config/rules.conf"),
+		StateFile:  getEnv("PLUCK_STATE_FILE", "/config/state.txt"),
 		RescanRaw:  getEnv("PLUCK_RESCAN_INTERVAL", "3600"),
 		DryRun:     getEnv("PLUCK_DRY_RUN", "false") == "true",
 		LogLevel:   getEnv("PLUCK_LOG_LEVEL", "info"),
@@ -74,6 +76,9 @@ func (appConfig *Config) validate() error {
 		validationErrors = append(validationErrors, "PLUCK_RULES_FILE must not be empty")
 	} else if _, err := os.Stat(appConfig.RulesFile); err != nil {
 		validationErrors = append(validationErrors, fmt.Sprintf("PLUCK_RULES_FILE %q: %v", appConfig.RulesFile, err))
+	}
+	if appConfig.StateFile == "" {
+		validationErrors = append(validationErrors, "PLUCK_STATE_FILE must not be empty")
 	}
 
 	rescanSecs, err := strconv.Atoi(appConfig.RescanRaw)

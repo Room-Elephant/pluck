@@ -22,4 +22,6 @@ COPY --from=builder /app/pluck /pluck
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /app/rules.example /config/rules.conf
 
+VOLUME /config
+
 ENTRYPOINT ["/pluck"]
