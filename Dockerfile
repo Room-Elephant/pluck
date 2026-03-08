@@ -1,6 +1,8 @@
 # ── Build stage ──────────────────────────────────────────────────────────────
 FROM golang:1.26-alpine AS builder
 
+ARG APP_VERSION=dev
+
 WORKDIR /app
 
 COPY go.mod go.sum ./
@@ -11,7 +13,7 @@ COPY . .
 # CGO_ENABLED=0 produces a fully static binary.
 # -ldflags="-s -w" strips the symbol table and DWARF info (~30 % size reduction).
 RUN CGO_ENABLED=0 GOOS=linux go build \
-      -ldflags="-s -w" \
+      -ldflags="-s -w -X main.version=${APP_VERSION}" \
       -o pluck \
       ./cmd/pluck
 

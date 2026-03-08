@@ -57,7 +57,7 @@ services:
       - PLUCK_CLIENT=transmission
       - PLUCK_CLIENT_URL=http://transmission:9091
       - PLUCK_MODE=hardlink
-      - PLUCK_WATCH_DIR=/data/downloads
+      - PLUCK_WATCH_DIR=/data/downloads/complete
     volumes:
       - ./rules.conf:/config/rules.conf
       # Mount the common parent as a single volume (required for hardlink mode)
