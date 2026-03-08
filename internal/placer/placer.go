@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"syscall"
 )
 
 type Mode string
@@ -34,8 +35,12 @@ func (filePlacer *Placer) Place(sourcePath, destinationDirectory string) (destin
 		return destinationPath, nil
 	}
 
-	if err := os.MkdirAll(filepath.Dir(destinationPath), 0o755); err != nil {
-		return "", fmt.Errorf("creating parent directory %s: %w", filepath.Dir(destinationPath), err)
+	parentDir := filepath.Dir(destinationPath)
+	if err := os.MkdirAll(parentDir, 0o755); err != nil {
+		return "", fmt.Errorf("creating parent directory %s: %w", parentDir, err)
+	}
+	if err := chownLike(parentDir, sourcePath); err != nil {
+		return "", fmt.Errorf("chown parent directory %s: %w", parentDir, err)
 	}
 
 	switch filePlacer.mode {
@@ -50,6 +55,18 @@ func (filePlacer *Placer) Place(sourcePath, destinationDirectory string) (destin
 }
 
 func (filePlacer *Placer) Mode() string { return string(filePlacer.mode) }
+
+func chownLike(destPath, sourcePath string) error {
+	info, err := os.Lstat(sourcePath)
+	if err != nil {
+		return nil
+	}
+	stat, ok := info.Sys().(*syscall.Stat_t)
+	if !ok {
+		return nil
+	}
+	return os.Lchown(destPath, int(stat.Uid), int(stat.Gid))
+}
 
 // ---------------------------------------------------------------------------
 // hardlink
@@ -79,7 +96,10 @@ func hardlink(sourcePath, destinationPath string) error {
 		currentDestinationPath := filepath.Join(destinationPath, relativePath)
 
 		if fileInfo.IsDir() {
-			return os.MkdirAll(currentDestinationPath, fileInfo.Mode())
+			if err := os.MkdirAll(currentDestinationPath, fileInfo.Mode()); err != nil {
+				return err
+			}
+			return chownLike(currentDestinationPath, currentSourcePath)
 		}
 
 		return os.Link(currentSourcePath, currentDestinationPath)
@@ -91,7 +111,10 @@ func hardlink(sourcePath, destinationPath string) error {
 // ---------------------------------------------------------------------------
 
 func symlink(sourcePath, destinationPath string) error {
-	return os.Symlink(sourcePath, destinationPath)
+	if err := os.Symlink(sourcePath, destinationPath); err != nil {
+		return err
+	}
+	return chownLike(destinationPath, sourcePath)
 }
 
 // ---------------------------------------------------------------------------
@@ -106,7 +129,10 @@ func copyAll(sourcePath, destinationPath string) error {
 	}
 
 	if !info.IsDir() {
-		return copyFile(sourcePath, destinationPath)
+		if err := copyFile(sourcePath, destinationPath); err != nil {
+			return err
+		}
+		return chownLike(destinationPath, sourcePath)
 	}
 
 	return filepath.Walk(sourcePath, func(currentSourcePath string, fileInfo os.FileInfo, err error) error {
@@ -121,9 +147,16 @@ func copyAll(sourcePath, destinationPath string) error {
 		currentDestinationPath := filepath.Join(destinationPath, relativePath)
 
 		if fileInfo.IsDir() {
-			return os.MkdirAll(currentDestinationPath, fileInfo.Mode())
+			if err := os.MkdirAll(currentDestinationPath, fileInfo.Mode()); err != nil {
+				return err
+			}
+			return chownLike(currentDestinationPath, currentSourcePath)
 		}
-		return copyFile(currentSourcePath, currentDestinationPath)
+
+		if err := copyFile(currentSourcePath, currentDestinationPath); err != nil {
+			return err
+		}
+		return chownLike(currentDestinationPath, currentSourcePath)
 	})
 }
 
