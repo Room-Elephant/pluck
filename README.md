@@ -1,33 +1,56 @@
-# 🍒 pluck
+```
+██████╗ ██╗     ██╗   ██╗ ██████╗██╗  ██╗
+██╔══██╗██║     ██║   ██║██╔════╝██║ ██╔╝
+██████╔╝██║     ██║   ██║██║     █████╔╝
+██╔═══╝ ██║     ██║   ██║██║     ██╔═██╗
+██║     ███████╗╚██████╔╝╚██████╗██║  ██╗
+╚═╝     ╚══════╝ ╚═════╝  ╚═════╝╚═╝  ╚═╝
+```
 
-**Lightweight, label-based torrent media sorter.**
+> **Lightweight, label-based torrent media sorter.**
+> Pluck watches your torrent client. Matches labels to rules. Moves files. Nothing more.
 
-Pluck watches your torrent client for completed downloads, matches their labels against your rules, and automatically hardlinks (or symlinks/copies) them to the right media directories.
+[![Go](https://img.shields.io/badge/Go-1.26-00ADD8?style=flat-square&logo=go)](https://go.dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-ghcr.io%2FRoom--Elephant%2Fpluck-2496ED?style=flat-square&logo=docker)](https://ghcr.io/Room-Elephant/pluck)
 
-> *Like Sonarr's import, but without the rest of Sonarr.*
+---
 
-## Why?
+## Why pluck?
 
-If you self-host a media server (Jellyfin, Plex, Audiobookshelf, Calibre-web) alongside a torrent client, you need a way to route completed downloads to the right library folder. The \*arr stack is powerful but overkill if you just need **"label X → folder Y"**. That's what pluck does — nothing more, nothing less.
+If you self-host a media server (Jellyfin, Plex, Audiobookshelf, Calibre-web) alongside a torrent client, you need a way to route completed downloads to the right library folder. The \*arr stack is powerful — but overkill if you just need **"label X → folder Y"**.
+
+That's what pluck does. Nothing more, nothing less.
+
+```
+Like Sonarr's import, but without the rest of Sonarr.
+```
+
+---
 
 ## Quick Start
 
 ### 1. Create a rules file
 
-```
-# rules
+Map torrent labels to destination folders. One rule per line: `label:destination`.
+
+```ini
+# rules.conf
 audiobook:/data/media/audiobooks
 ebook:/data/media/ebooks
 music:/data/media/music
+movie:/data/media/movies
+tv:/data/media/tv
 ```
+
+> Labels are matched **case-insensitively**. `Audiobook`, `AUDIOBOOK`, and `audiobook` all match the same rule.
 
 ### 2. Run with Docker Compose
 
 ```yaml
 services:
   pluck:
-    image: ghcr.io/jpedroborges/pluck:latest
-    container_name: pluck
+    image: ghcr.io/Room-Elephant/pluck:latest
     restart: unless-stopped
     environment:
       - PLUCK_CLIENT=transmission
@@ -35,31 +58,43 @@ services:
       - PLUCK_MODE=hardlink
       - PLUCK_WATCH_DIR=/data/downloads
     volumes:
-      - ./rules:/etc/pluck/rules
-      - /data/downloads:/data/downloads
-      - /data/media:/data/media
+      - ./rules.conf:/config/rules.conf
+      # Mount the common parent as a single volume (required for hardlink mode)
+      - /data:/data
 ```
 
 ### 3. Label your torrents
 
-Add labels in your torrent client (e.g., `audiobook`, `ebook`, `music`). When a torrent completes, pluck picks it up and places it in the matching directory.
+Add labels in your torrent client. When a download completes, pluck picks it up and places it in the matching directory.
+
+Torrents with **multiple labels** are processed per label — each label gets its own placement.
+
+---
 
 ## How It Works
 
 ```
-┌──────────────┐     ┌───────┐     ┌─────────────────────┐
-│ Torrent      │     │       │     │ /media/audiobooks/   │
-│ Client       │────▶│ pluck │────▶│ /media/ebooks/       │
-│ (labels)     │     │       │     │ /media/music/        │
-└──────────────┘     └───────┘     └─────────────────────┘
-                         │
-                    Rules File
-                  label:directory
+┌─────────────────┐   3. Read Label    ┌─────────┐   5. Place File    ┌──────────────────────┐
+│  Torrent Client │◀───────────────────│         │───────────────────▶│ /media/audiobooks/   │
+│    (labels)     │                    │  pluck  │                    │ /media/ebooks/       │
+└─────────────────┘   2. File added    │         │                    │ /media/music/        │
+         │          ┌─────────────────▶│         │                    └──────────────────────┘
+         │          │                  └─────────┘
+         │ 1. Done  │                       │
+         ▼          │                       │ 4. Check Rules
+┌─────────────────┐ │                       ▼
+│  Watch Dir      │─┘                  rules.conf
+│  /data/downloads│                   label:directory
+└─────────────────┘
 ```
 
-Pluck detects completed torrents in two ways:
-1. **Filesystem watcher** (`inotifywait`) — reacts immediately when files appear in the downloads directory
-2. **Periodic rescan** — catches torrents that were labeled after completion (default: every 60 minutes)
+Pluck detects completed torrents two ways:
+
+| Trigger | How |
+|---|---|
+| **Filesystem watcher** | Uses [`fsnotify`](https://github.com/fsnotify/fsnotify) to watch the downloads directory recursively. Fires after a **2-second debounce** to let files settle. |
+| **Periodic rescan** | Catches torrents labeled after completion. Default: every 60 minutes, configurable via `PLUCK_RESCAN_INTERVAL`. |
+---
 
 ## Configuration
 
@@ -73,14 +108,14 @@ All configuration is done via environment variables:
 | `PLUCK_CLIENT_PASS` | *(empty)* | RPC auth password |
 | `PLUCK_MODE` | `hardlink` | `hardlink`, `symlink`, or `copy` |
 | `PLUCK_WATCH_DIR` | `/data/downloads` | Directory to watch for new files |
-| `PLUCK_RULES_FILE` | `/etc/pluck/rules` | Path to label→directory rules file |
+| `PLUCK_RULES_FILE` | `/config/rules.conf` | Path to rules file |
 | `PLUCK_RESCAN_INTERVAL` | `3600` | Seconds between periodic rescans |
 | `PLUCK_DRY_RUN` | `false` | Log actions without executing them |
 | `PLUCK_LOG_LEVEL` | `info` | `debug`, `info`, or `error` |
 
 ### Rules File Format
 
-```
+```ini
 # One rule per line: label:destination
 # Labels are matched case-insensitively
 # Lines starting with # are comments
@@ -92,15 +127,20 @@ movie:/data/media/movies
 tv:/data/media/tv
 ```
 
-### File Modes
+### File Placement Modes
 
 | Mode | Behavior | Cross-filesystem? | Disk usage |
 |---|---|---|---|
-| `hardlink` (default) | Creates hard links; files share the same disk blocks | ❌ No | No extra space |
-| `symlink` | Creates symbolic links pointing to the source | ✅ Yes | No extra space |
-| `copy` | Copies files to the destination | ✅ Yes | Doubles disk usage |
+| `hardlink` *(default)* | Hard-links files; source and destination share the same disk blocks | ❌ No | None |
+| `symlink` | Creates a symbolic link pointing to the source file | ✅ Yes | None |
+| `copy` | Copies files to the destination | ✅ Yes | Doubles usage |
 
-> **Tip:** Use `hardlink` when downloads and media are on the same filesystem. Use `symlink` or `copy` when they're on different filesystems.
+> **Tip:** Use `hardlink` when downloads and media share a filesystem. Use `symlink` across different filesystems. Use `copy` when you need the most reliability, but it doubles disk usage.
+
+> **⚠️ Hardlink mode:** Docker treats each bind-mount as a separate filesystem. To allow hardlinking between your downloads and media folders, mount their **common parent** (e.g., `/data:/data`) as a single volume. Mounting them individually will cause a `cross-device link` error.
+
+> **⚠️ Symlink mode:** Ensure your media server container (Jellyfin, Plex, etc.) also mounts the downloads directory at the **same path**, so symlinks can resolve correctly.
+---
 
 ## Supported Clients
 
@@ -110,24 +150,36 @@ tv:/data/media/tv
 | qBittorrent | 🔜 Planned |
 | Deluge | 🔜 Planned |
 
-## Building from Source
-
-```bash
-docker build -t pluck .
-```
+---
 
 ## Dry Run
 
-Test your rules without moving any files:
+Test your rules without touching any files:
 
 ```bash
 docker run --rm \
   -e PLUCK_DRY_RUN=true \
   -e PLUCK_LOG_LEVEL=debug \
-  -v ./rules:/etc/pluck/rules \
+  -v ./rules.conf:/config/rules.conf \
   -v /data/downloads:/data/downloads \
-  pluck
+  ghcr.io/Room-Elephant/pluck:latest
 ```
+
+---
+
+## Building from Source
+
+**Docker:**
+```bash
+docker build -t pluck .
+```
+
+**Native (Go 1.26+):**
+```bash
+go build -o pluck ./cmd/pluck
+```
+
+---
 
 ## Roadmap
 
@@ -137,6 +189,8 @@ docker run --rm \
 - [ ] Post-pluck custom scripts
 - [ ] GHCR / Docker Hub automated builds
 - [ ] Health check endpoint
+
+---
 
 ## License
 

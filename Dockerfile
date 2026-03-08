@@ -1,10 +1,25 @@
-FROM alpine:latest
+# ── Build stage ──────────────────────────────────────────────────────────────
+FROM golang:1.26-alpine AS builder
 
-RUN apk add --no-cache inotify-tools curl jq
+WORKDIR /app
 
-COPY pluck.sh /usr/local/bin/pluck
-RUN chmod +x /usr/local/bin/pluck
+COPY go.mod go.sum ./
+RUN go mod download
 
-COPY rules.example /etc/pluck/rules
+COPY . .
 
-ENTRYPOINT ["pluck"]
+# CGO_ENABLED=0 produces a fully static binary.
+# -ldflags="-s -w" strips the symbol table and DWARF info (~30 % size reduction).
+RUN CGO_ENABLED=0 GOOS=linux go build \
+      -ldflags="-s -w" \
+      -o pluck \
+      ./cmd/pluck
+
+# ── Final stage ───────────────────────────────────────────────────────────────
+FROM scratch
+
+COPY --from=builder /app/pluck /pluck
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /app/rules.example /config/rules.conf
+
+ENTRYPOINT ["/pluck"]
