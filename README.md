@@ -1,3 +1,6 @@
+[![Docker](https://img.shields.io/badge/Docker-ghcr.io%2FRoom--Elephant%2Fpluck-2496ED?style=flat-square&logo=docker)](https://ghcr.io/Room-Elephant/pluck)
+[![Docker Hub](https://img.shields.io/badge/Docker%20Hub-roomelephant%2Fpluck-2496ED?style=flat-square&logo=docker)](https://hub.docker.com/r/roomelephant/pluck)
+
 ```
 ██████╗ ██╗     ██╗   ██╗ ██████╗██╗  ██╗
 ██╔══██╗██║     ██║   ██║██╔════╝██║ ██╔╝
@@ -51,7 +54,7 @@ tv:/data/media/tv
 ```yaml
 services:
   pluck:
-    image: ghcr.io/Room-Elephant/pluck:latest
+    image: roomelephant/pluck:latest
     restart: unless-stopped
     environment:
       - PLUCK_CLIENT=transmission
@@ -63,6 +66,9 @@ services:
       # Mount the common parent as a single volume (required for hardlink mode)
       - /data:/data
 ```
+
+> Available on [Docker Hub](https://hub.docker.com/r/roomelephant/pluck) (`roomelephant/pluck`) 
+> and [GHCR](https://ghcr.io/Room-Elephant/pluck) (`ghcr.io/room-elephant/pluck`).
 
 ### 3. Label your torrents
 
