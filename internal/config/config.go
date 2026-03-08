@@ -54,11 +54,11 @@ func (appConfig *Config) validate() error {
 	if !contains(client.SupportedClients(), appConfig.Client) {
 		validationErrors = append(validationErrors, fmt.Sprintf("unsupported client %q (supported: %s)", appConfig.Client, strings.Join(client.SupportedClients(), ", ")))
 	}
-	
+
 	if !contains(placer.SupportedModes(), appConfig.Mode) {
 		validationErrors = append(validationErrors, fmt.Sprintf("unsupported mode %q (supported: %s)", appConfig.Mode, strings.Join(placer.SupportedModes(), ", ")))
 	}
-	
+
 	if !contains(log.SupportedLevels(), appConfig.LogLevel) {
 		validationErrors = append(validationErrors, fmt.Sprintf("unsupported log level %q (supported: %s)", appConfig.LogLevel, strings.Join(log.SupportedLevels(), ", ")))
 	}
