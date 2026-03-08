@@ -8,6 +8,7 @@
 ```
 
 > **Lightweight, label-based torrent media sorter.**
+
 > Pluck watches your torrent client. Matches labels to rules. Moves files. Nothing more.
 
 [![Go](https://img.shields.io/badge/Go-1.26-00ADD8?style=flat-square&logo=go)](https://go.dev)
