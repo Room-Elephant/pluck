@@ -137,6 +137,8 @@ tv:/data/media/tv
 
 > **Tip:** Use `hardlink` when downloads and media share a filesystem. Use `symlink` across different filesystems. Use `copy` when you need the most reliability, but it doubles disk usage.
 
+> **💡 Note on Ownership & Visibility:** Pluck natively reads and replicates the exact User ID and Group ID (`UID`/`GID`) of your original downloads and applies them directly to the placed files and directories. This guarantees that your files retain perfect visibility and permissions for your media server.
+
 > **⚠️ Hardlink mode:** Docker treats each bind-mount as a separate filesystem. To allow hardlinking between your downloads and media folders, mount their **common parent** (e.g., `/data:/data`) as a single volume. Mounting them individually will cause a `cross-device link` error.
 
 > **⚠️ Symlink mode:** Ensure your media server container (Jellyfin, Plex, etc.) also mounts the downloads directory at the **same path**, so symlinks can resolve correctly.
